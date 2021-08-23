@@ -4,6 +4,7 @@ package mc_util
 import (
 	bufio "bufio"
 	bytes "bytes"
+	errors "errors"
 	io    "io"
 )
 
@@ -52,7 +53,7 @@ func readVarInt32(r io.ByteReader)(num int32, n int, err error){
 			return num, n + 1, nil
 		}
 	}
-	return 0, n + 1, VAR_INT_TOO_LONG_ERR
+	return 0, n + 1, errors.New("VAR_INT_TOO_LONG_ERR")
 }
 
 func readVarInt64(r io.ByteReader)(num int64, n int, err error){
@@ -67,7 +68,7 @@ func readVarInt64(r io.ByteReader)(num int64, n int, err error){
 			return num, n + 1, nil
 		}
 	}
-	return 0, n + 1, VAR_INT_TOO_LONG_ERR
+	return 0, n + 1, errors.New("VAR_INT_TOO_LONG_ERR")
 }
 
 func (r *reader)BeginReadPacket()(id int32, err error){
@@ -175,7 +176,7 @@ func (r *reader)ReadVarInt64()(num int64, n int, err error){
 
 func (r *reader)ReadString()(str string, n int, err error){
 	if r.data_buf == nil {
-		return "", 0, PACKET_NOT_BEGIN_READ_ERR
+		return "", 0, errors.New("PACKET_NOT_BEGIN_READ_ERR")
 	}
 	var leng int32
 	var n0 int
@@ -189,7 +190,7 @@ func (r *reader)ReadString()(str string, n int, err error){
 		buf[ind], n0, err = r.data_buf.ReadRune()
 		if err != nil {
 			if err == io.EOF{
-				return "", 0, PACKET_LENGTH_OUT_ERROR
+				return "", 0, errors.New("PACKET_LENGTH_OUT_ERROR")
 			}
 			return "", 0, err
 		}

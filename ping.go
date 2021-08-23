@@ -2,24 +2,25 @@
 package mc_util
 
 import (
+	bytes "bytes"
 	json "encoding/json"
 	time "time"
 	net "net"
 	fmt "fmt"
 )
 
-type ServerInfo struct{
+type ServerStatus struct{
 	Description string
 	Max_player uint32
 	Online_player uint32
-	Players []map[string]string
+	Players []map[string]interface{}
 	Version string
 	Favicon string
 	Delay int64
 }
 
-func Ping(host string, port uint16)(info *ServerInfo, err error){
-	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", host, port))
+func Ping(host string, port uint16)(status *ServerStatus, err error){
+	conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", host, port), time.Second * 5)
 	if err != nil {
 		return nil, err
 	}
@@ -62,13 +63,20 @@ func Ping(host string, port uint16)(info *ServerInfo, err error){
 
 	obj := make(map[string]interface{})
 	json.Unmarshal(([]byte)(jstr), &obj)
-	players := obj["players"].(map[string]interface{})
+	player_info := obj["players"].(map[string]interface{})
 	version := obj["version"].(map[string]interface{})
-	return &ServerInfo{
+	var players = []map[string]interface{}{}
+	if player_info["sample"] != nil {
+		players = make([]map[string]interface{}, 0, len(player_info["sample"].([]interface{})))
+		for _, p := range player_info["sample"].([]interface{}){
+			players = append(players, p.(map[string]interface{}))
+		}
+	}
+	return &ServerStatus{
 		Description: parseDescStr(obj["description"].(map[string]interface{})),
-		Max_player: (uint32)(players["max"].(float64)),
-		Online_player: (uint32)(players["online"].(float64)),
-		Players: players["sample"].([]map[string]string),
+		Max_player: (uint32)(player_info["max"].(float64)),
+		Online_player: (uint32)(player_info["online"].(float64)),
+		Players: players,
 		Version: version["name"].(string),
 		Favicon: obj["favicon"].(string),
 		Delay: delay,
@@ -77,13 +85,12 @@ func Ping(host string, port uint16)(info *ServerInfo, err error){
 
 func parseDesc(buf *bytes.Buffer, descmap map[string]interface{}){
 	buf.WriteString(descmap["text"].(string))
-	extra0, eok := descmap["extra"]
+	extra, eok := descmap["extra"]
 	if !eok {
 		return
 	}
-	extras := util.JsonToArrMap(extra0)
-	for _, e := range extras {
-		parseDesc(buf, e)
+	for _, e := range extra.([]interface{}) {
+		parseDesc(buf, e.(map[string]interface{}))
 	}
 }
 

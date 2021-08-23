@@ -4,6 +4,7 @@ package mc_util
 import (
 	bufio "bufio"
 	bytes "bytes"
+	errors "errors"
 	io    "io"
 )
 
@@ -41,7 +42,7 @@ func NewWriter(w io.Writer)(*writer){
 
 func (w *writer)BeginWritePacket(id int32)(n int, err error){
 	if w.buf != nil {
-		return 0, PACKET_NOT_SEND_ERR
+		return 0, errors.New("PACKET_NOT_SEND_ERR")
 	}
 	w.buf = bytes.NewBuffer([]byte{})
 	return w.WriteVarInt32(id)
@@ -93,7 +94,7 @@ func (w *writer)WriteString(str string)(n int, err error){
 
 func (w *writer)EndWritePacket()(leng int32, n int, err error){
 	if w.buf == nil {
-		return 0, 0, PACKET_NOT_BEGIN_WRITE_ERR
+		return 0, 0, errors.New("PACKET_NOT_BEGIN_WRITE_ERR")
 	}
 	leng = (int32)(w.buf.Len())
 	w.bw.Write(EncodeVarInt32(leng))
